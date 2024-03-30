@@ -1,5 +1,5 @@
 # encoding=utf-8
-import cPickle as pickle
+import pickle as pickle
 import random
 from random import *
 import numpy as np
