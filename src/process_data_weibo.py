@@ -569,7 +569,7 @@ def get_data(text_only):
 
     #
     #
-    word_embedding_path = "/kaggle/working/w2v.pickle"
+    word_embedding_path = "/kaggle/working/EANN-KDD18/data/weibo/w2v.pickle"
 
     w2v = pickle.load(open(word_embedding_path, 'rb'))
     # print(temp)
