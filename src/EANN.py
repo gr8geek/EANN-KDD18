@@ -314,6 +314,7 @@ def main(args):
             optimizer.zero_grad()
 
             class_outputs, domain_outputs = model(train_text, train_image, train_mask)
+            train_labels = train_labels.long()
 
             ## Fake or Real loss
             class_loss = criterion(class_outputs, train_labels)
