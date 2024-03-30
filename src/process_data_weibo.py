@@ -254,6 +254,186 @@ def write_data(flag, image, text_only):
     print("paried data has " + str(len(paired_data)) + " dimension")
     return paired_data
 
+def write_data(flag, image, text_only):
+
+    def read_post(flag):
+        stop_words = stopwordslist()
+        pre_path = "/kaggle/working/tweets/"
+        file_list = [pre_path + "test_nonrumor.txt", pre_path + "test_rumor.txt", \
+                         pre_path + "train_nonrumor.txt", pre_path + "train_rumor.txt"]
+        if flag == "train":
+            id = pickle.load(open("/kaggle/working/train_id.pickle", 'rb'))
+        elif flag == "validate":
+            id = pickle.load(open("/kaggle/working/validate_id.pickle", 'rb'))
+        elif flag == "test":
+            id = pickle.load(open("/kaggle/working/test_id.pickle", 'rb'))
+
+
+        post_content = []
+        labels = []
+        image_ids = []
+        twitter_ids = []
+        data = []
+        column = ['post_id', 'image_id', 'original_post', 'post_text', 'label', 'event_label']
+        key = -1
+        map_id = {}
+        top_data = []
+        for k, f in enumerate(file_list):
+
+            f = open(f, 'r')
+            if (k + 1) % 2 == 1:
+                label = 0  ### real is 0
+            else:
+                label = 1  ####fake is 1
+
+            twitter_id = 0
+            line_data = []
+            top_line_data = []
+
+            for i, l in enumerate(f.readlines()):
+                # key += 1
+
+                # if int(key /3) in index:
+                # print(key/3)
+                # continue
+
+
+                if (i + 1) % 3 == 1:
+                    line_data = []
+                    twitter_id = l.split('|')[0]
+                    line_data.append(twitter_id)
+
+
+
+                if (i + 1) % 3 == 2:
+
+                    line_data.append(l.lower())
+
+                if (i + 1) % 3 == 0:
+                    l = clean_str_sst(l)
+
+                    seg_list = jieba.cut_for_search(l)
+                    new_seg_list = []
+                    for word in seg_list:
+                        if word not in stop_words:
+                            new_seg_list.append(word)
+
+                    clean_l = " ".join(new_seg_list)
+                    if len(clean_l) > 10 and line_data[0] in id:
+                        post_content.append(l)
+                        line_data.append(l)
+                        line_data.append(clean_l)
+                        line_data.append(label)
+                        event = int(id[line_data[0]])
+                        if event not in map_id:
+                            map_id[event] = len(map_id)
+                            event = map_id[event]
+                        else:
+                            event = map_id[event]
+
+                        line_data.append(event)
+
+                        data.append(line_data)
+
+
+            f.close()
+            # print(data)
+            #     return post_content
+        
+        data_df = pd.DataFrame(np.array(data), columns=column)
+        write_txt(top_data)
+
+        return post_content, data_df
+
+    post_content, post = read_post(flag)
+    print("Original post length is " + str(len(post_content)))
+    print("Original data frame is " + str(post.shape))
+
+
+    def find_most(db):
+        maxcount = max(len(v) for v in db.values())
+        return [k for k, v in db.items() if len(v) == maxcount]
+
+    def select(train, selec_indices):
+        temp = []
+        for i in range(len(train)):
+            ele = list(train[i])
+            temp.append([ele[i] for i in selec_indices])
+            #   temp.append(np.array(train[i])[selec_indices])
+        return temp
+
+#     def balance_event(data, event_list):
+#         id = find_most(event_list)[0]
+#         remove_indice = random.sample(range(min(event_list[id]), \
+#                                             max(event_list[id])), int(len(event_list[id]) * 0.9))
+#         select_indices = np.delete(range(len(data[0])), remove_indice)
+#         return select(data, select_indices)
+
+    def paired(text_only = False):
+        ordered_image = []
+        ordered_text = []
+        ordered_post = []
+        ordered_event= []
+        label = []
+        post_id = []
+        image_id_list = []
+        #image = []
+
+        image_id = ""
+        for i, id in enumerate(post['post_id']):
+            for image_id in post.iloc[i]['image_id'].split('|'):
+                image_id = image_id.split("/")[-1].split(".")[0]
+                if image_id in image:
+                    break
+
+            if text_only or image_id in image:
+                if not text_only:
+                    image_name = image_id
+                    image_id_list.append(image_name)
+                    ordered_image.append(image[image_name])
+                ordered_text.append(post.iloc[i]['original_post'])
+                ordered_post.append(post.iloc[i]['post_text'])
+                ordered_event.append(post.iloc[i]['event_label'])
+                post_id.append(id)
+
+
+                label.append(post.iloc[i]['label'])
+
+        label = np.array(label, dtype=np.int)
+        ordered_event = np.array(ordered_event, dtype=np.int)
+
+        print("Label number is " + str(len(label)))
+        print("Rummor number is " + str(sum(label)))
+        print("Non rummor is " + str(len(label) - sum(label)))
+
+
+
+        #
+        if flag == "test":
+            y = np.zeros(len(ordered_post))
+        else:
+            y = []
+
+
+        data = {"post_text": np.array(ordered_post),
+                "original_post": np.array(ordered_text),
+                "image": ordered_image, "social_feature": [],
+                "label": np.array(label), \
+                "event_label": ordered_event, "post_id":np.array(post_id),
+                "image_id":image_id_list}
+        #print(data['image'][0])
+
+
+        print("data size is " + str(len(data["post_text"])))
+        
+        return data
+
+    paired_data = paired(text_only)
+
+    print("paired post length is "+str(len(paired_data["post_text"])))
+    print("paried data has " + str(len(paired_data)) + " dimension")
+    return paired_data
+
 
 def load_data(train, validate, test):
     vocab = defaultdict(float)
