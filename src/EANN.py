@@ -46,17 +46,18 @@ class Rumor_Data(Dataset):
 
 
 class ReverseLayerF(Function):
-    @staticmethod
-    def forward(ctx, x):
-        ctx.save_for_backward(x)
+
+    #@staticmethod
+    def forward(self, x):
+        self.lambd = args.lambd
         return x.view_as(x)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return (grad_output * -args.lambd), None
+    #@staticmethod
+    def backward(self, grad_output):
+        return (grad_output * -self.lambd)
 
 def grad_reverse(x):
-    return ReverseLayerF.apply(x)
+    return ReverseLayerF()(x)
 
 
 
