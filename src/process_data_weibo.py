@@ -20,20 +20,19 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import os.path
 from gensim.models import Word2Vec
+import re
 
-def stopwordslist(filepath = '/kaggle/working/stop_words.txt'):
+def stopwordslist(filepath='/kaggle/working/stop_words.txt'):
     stopwords = {}
-    for line in open(filepath, 'r').readlines():
-        line = unicode(line, "utf-8").strip()
-        stopwords[line] = 1
-    #stopwords = [line.strip() for line in open(filepath, 'r', encoding='utf-8').readlines()]
+    with open(filepath, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            line = line.strip()  # modified
+            stopwords[line] = 1
     return stopwords
 
 def clean_str_sst(string):
-    """
-    Tokenization/string cleaning for the SST dataset
-    """
-    string = re.sub(u"[，。 :,.；|-“”——_/nbsp+&;@、《》～（）())#O！：【】]", "", string)
+    # modified
+    string = re.sub("[，。 :,.；|-“”——_/nbsp+&;@、《》～（）())#O！：【】]", "", string)
     return string.strip().lower()
 
 
@@ -131,7 +130,7 @@ def write_data(flag, image, text_only):
                     line_data.append(l.lower())
 
                 if (i + 1) % 3 == 0:
-                    l = clean_str_sst(unicode(l, "utf-8"))
+                    l = clean_str_sst(l)
 
                     seg_list = jieba.cut_for_search(l)
                     new_seg_list = []
