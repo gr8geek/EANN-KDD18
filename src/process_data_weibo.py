@@ -219,8 +219,8 @@ def write_data(flag, image, text_only):
 
                 label.append(post.iloc[i]['label'])
 
-        label = np.array(label, dtype=np.int)
-        ordered_event = np.array(ordered_event, dtype=np.int)
+        label = np.array(label, dtype=np.int32)
+        ordered_event = np.array(ordered_event, dtype=np.int32)
 
         print("Label number is " + str(len(label)))
         print("Rummor number is " + str(sum(label)))
@@ -399,8 +399,9 @@ def write_data(flag, image, text_only):
 
                 label.append(post.iloc[i]['label'])
 
-        label = np.array(label, dtype=np.int)
-        ordered_event = np.array(ordered_event, dtype=np.int)
+        label = np.array(label, dtype=np.int32)
+        
+        ordered_event = np.array(ordered_event, dtype=np.int32)
 
         print("Label number is " + str(len(label)))
         print("Rummor number is " + str(sum(label)))
