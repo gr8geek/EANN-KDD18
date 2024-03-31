@@ -227,100 +227,37 @@ def split_train_validation(train, percent):
 
 def main(args):
     print('loading data')
-    #    dataset = DiabetesDataset(root=args.training_file)
-    #    train_loader = DataLoader(dataset=dataset,
-    #                              batch_size=32,
-    #                              shuffle=True,
-    #                              num_workers=2)
-
-    # MNIST Dataset
     train, validation, test, W = load_data(args)
     test_id = test['post_id']
 
-    #train, validation = split_train_validation(train,  1)
-
-    #weights = make_weights_for_balanced_classes(train[-1], 15)
-    #weights = torch.DoubleTensor(weights)
-    #sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
-
-
     train_dataset = Rumor_Data(train)
-
     validate_dataset = Rumor_Data(validation)
-
     test_dataset = Rumor_Data(test) 
 
-    # Data Loader (Input Pipeline)
-    train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=args.batch_size,
-                              shuffle=True)
-
-    validate_loader = DataLoader(dataset = validate_dataset,
-                                 batch_size=args.batch_size,
-                                 shuffle=False)
-
-    test_loader = DataLoader(dataset=test_dataset,
-                             batch_size=args.batch_size,
-                             shuffle=False)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
+    validate_loader = DataLoader(dataset=validate_dataset, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False)
 
     print('building model')
     model = CNN_Fusion(args, W)
 
     if torch.cuda.is_available():
-        print("CUDA")
         model.cuda()
 
-    # Loss and Optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, list(model.parameters())),
-                                 lr= args.learning_rate)
-    #optimizer = torch.optim.RMSprop(filter(lambda p: p.requires_grad, list(model.parameters())),
-                                 #lr=args.learning_rate)
-    #scheduler = StepLR(optimizer, step_size= 10, gamma= 1)
-
-
-    iter_per_epoch = len(train_loader)
-    print("loader size " + str(len(train_loader)))
-    best_validate_acc = 0.000
-    best_test_acc = 0.000
-    best_loss = 100
-    best_validate_dir = ''
-    best_list = [0,0]
+    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate)
 
     print('training model')
-    adversarial = True
-    # Train the Model
     for epoch in range(args.num_epochs):
-
-        p = float(epoch) / 100
-        #lambd = 2. / (1. + np.exp(-10. * p)) - 1
-        lr = 0.001 / (1. + 10 * p) ** 0.75
-
-        optimizer.lr = lr
-        #rgs.lambd = lambd
-        start_time = time.time()
-        cost_vector = []
-        class_cost_vector = []
-        domain_cost_vector = []
-        acc_vector = []
-        valid_acc_vector = []
-        test_acc_vector = []
-        vali_cost_vector = []
-        test_cost_vector = []
-
+        model.train()
         for i, (train_data, train_labels, event_labels) in enumerate(train_loader):
-            train_text, train_image,  train_mask, train_labels, event_labels = \
-                to_var(train_data[0]), to_var(train_data[1]), to_var(train_data[2]), \
-                to_var(train_labels), to_var(event_labels)
+            train_text, train_image, train_mask = train_data
+            train_text, train_image, train_mask = to_var(train_text), to_var(train_image), to_var(train_mask)
+            train_labels, event_labels = to_var(train_labels).long(), to_var(event_labels).long()  # Convert labels to long
 
-            # Forward + Backward + Optimize
             optimizer.zero_grad()
-
             class_outputs, domain_outputs = model(train_text, train_image, train_mask)
-
-            ## Fake or Real loss
             class_loss = criterion(class_outputs, train_labels)
-            # Event Loss
             domain_loss = criterion(domain_outputs, event_labels)
             loss = class_loss + domain_loss
             loss.backward()
