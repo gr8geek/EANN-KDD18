@@ -238,6 +238,11 @@ def main(args):
     validate_loader = DataLoader(dataset=validate_dataset, batch_size=args.batch_size, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False)
 
+    class_cost_vector = []
+    domain_cost_vector = []
+    cost_vector = []
+    acc_vector = []
+
     print('building model')
     model = CNN_Fusion(args, W)
 
