@@ -45,19 +45,21 @@ class Rumor_Data(Dataset):
 
 
 
+
 class ReverseLayerF(Function):
     @staticmethod
     def forward(ctx, x, lambd):
+        ctx.save_for_backward(x)
         ctx.lambd = lambd
         return x.view_as(x)
 
     @staticmethod
     def backward(ctx, grad_output):
-        return grad_output * -ctx.lambd, None
+        lambd = ctx.lambd
+        return grad_output.neg() * lambd, None
 
-def grad_reverse(x):
-    return ReverseLayerF()(x)
-
+def grad_reverse(x, lambd=1.0):
+    return ReverseLayerF.apply(x, lambd)
 
 
 # Neural Network Model (1 hidden layer)
@@ -165,7 +167,8 @@ class CNN_Fusion(nn.Module):
         ### Fake or real
         class_output = self.class_classifier(text_image)
         ## Domain (which Event )
-        reverse_feature = grad_reverse(text_image)
+        reverse_feature = grad_reverse(text_image, self.args.lambd)
+
         domain_output = self.domain_classifier(reverse_feature)
 
         # ### Multimodal
